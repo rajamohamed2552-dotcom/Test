@@ -1,0 +1,18 @@
+@model List<AuditCampaign>
+@{ ViewData["Title"] = "Audit campaigns"; var canAudit = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.Auditor); }
+<div class="d-flex justify-content-between mb-3">
+    <p class="text-muted mb-0">Physical verification of assets: existence, location and condition.</p>
+    @if (canAudit) { <a asp-action="Create" class="btn btn-primary">+ New campaign</a> }
+</div>
+<div class="card"><table class="table table-hover mb-0 align-middle"><thead><tr><th>Campaign</th><th>Plant</th><th>Window</th><th>Status</th><th style="width:220px">Progress</th><th class="num">Findings</th></tr></thead><tbody>
+@foreach (var c in Model)
+{
+    var done = c.Items.Count(i => i.Result != AuditResult.Pending);
+    var pct = c.Items.Count == 0 ? 0 : done * 100 / c.Items.Count;
+    var findings = c.Items.Count(i => i.Result is AuditResult.Missing or AuditResult.LocationMismatch or AuditResult.ConditionIssue);
+    <tr><td><a asp-action="Details" asp-route-id="@c.Id">@c.Name</a></td><td>@c.Plant?.Code</td><td>@c.StartDate.ToString("dd MMM") – @c.EndDate.ToString("dd MMM yyyy")</td>
+        <td><span class="badge text-bg-@(c.Status == AuditCampaignStatus.Closed ? "secondary" : "primary")">@Ui.Spaced(c.Status)</span></td>
+        <td><div class="progress" style="height:8px"><div class="progress-bar" style="width:@(pct)%"></div></div><span class="small text-muted">@done / @c.Items.Count</span></td><td class="num">@findings</td></tr>
+}
+@if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">No audit campaigns yet.</td></tr> }
+</tbody></table></div>

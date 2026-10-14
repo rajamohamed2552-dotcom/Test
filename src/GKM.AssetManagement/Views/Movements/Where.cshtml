@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Asset locations";
+    var rows = (List<(string Plant, string Location, int Count, int InMaintenance)>)ViewBag.Rows;
+}
+<p class="text-muted">Live count of active assets by plant and location (current custody position).</p>
+<div class="card"><table class="table mb-0"><thead><tr><th>Plant</th><th>Location</th><th class="num">Assets</th><th class="num">Under maintenance</th></tr></thead><tbody>
+@foreach (var r in rows) { <tr><td>@r.Plant</td><td>@r.Location</td><td class="num">@r.Count</td><td class="num">@r.InMaintenance</td></tr> }
+</tbody></table></div>
+<a asp-action="Index" class="btn btn-link mt-2">← Movement history</a>

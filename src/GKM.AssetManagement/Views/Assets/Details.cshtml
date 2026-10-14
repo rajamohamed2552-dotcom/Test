@@ -1,0 +1,94 @@
+@model Asset
+@{
+    ViewData["Title"] = Model.AssetTag;
+    var canEdit = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.AssetAccountant) || User.IsInRole(Roles.PlantManager);
+    var approver = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager);
+    var live = Model.Status is AssetStatus.Active or AssetStatus.UnderMaintenance;
+    var maintCost = Model.WorkOrders.Where(w => w.Status == WorkOrderStatus.Completed).Sum(w => w.TotalCost);
+    var pct = Model.AcquisitionCost == 0 ? 0 : Math.Round(Model.AccumulatedDepreciation / Model.AcquisitionCost * 100);
+}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h4 class="mb-1">@Model.Name</h4><span class="badge text-bg-@Ui.Badge(Model.Status)">@Ui.Spaced(Model.Status)</span> <span class="text-muted ms-2">@Model.Category?.AssetClass › @Model.Category?.Name</span></div>
+    <div class="d-flex gap-2">
+        @if (canEdit && (Model.Status == AssetStatus.Draft || Model.Status == AssetStatus.Rejected))
+        {
+            <form asp-action="Submit" asp-route-id="@Model.Id" method="post"><button class="btn btn-warning">Submit for approval</button></form>
+        }
+        @if (canEdit && Model.Status != AssetStatus.PendingApproval && Model.Status != AssetStatus.Disposed) { <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">Edit</a> }
+        @if (canEdit && live) { <a asp-controller="Movements" asp-action="Create" asp-route-assetId="@Model.Id" class="btn btn-outline-secondary">Transfer</a> }
+        @if (live) { <a asp-controller="Maintenance" asp-action="Create" asp-route-assetId="@Model.Id" class="btn btn-outline-secondary">Raise work order</a> }
+        @if (approver && live) { <a asp-action="Dispose" asp-route-id="@Model.Id" class="btn btn-outline-danger">Dispose</a> }
+    </div>
+</div>
+@if (Model.Status == AssetStatus.Rejected) { <div class="alert alert-danger">Rejected: @Model.RejectionReason</div> }
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card p-3 mb-3"><h6>Identification &amp; ownership</h6>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Asset tag</dt><dd class="col-sm-3">@Model.AssetTag</dd><dt class="col-sm-3">Serial no.</dt><dd class="col-sm-3">@(Model.SerialNumber ?? "—")</dd>
+                <dt class="col-sm-3">Plant</dt><dd class="col-sm-3">@Model.Plant?.Name</dd><dt class="col-sm-3">Location</dt><dd class="col-sm-3">@(Model.Location?.Name ?? "—")</dd>
+                <dt class="col-sm-3">Cost centre</dt><dd class="col-sm-3">@Model.CostCenter?.Display</dd><dt class="col-sm-3">Custodian</dt><dd class="col-sm-3">@(Model.Custodian ?? "—")</dd>
+                <dt class="col-sm-3">Manufacturer</dt><dd class="col-sm-3">@Model.Manufacturer @Model.ModelNumber</dd><dt class="col-sm-3">Vendor / PO</dt><dd class="col-sm-3">@Model.Vendor @(Model.PurchaseOrderNumber != null ? "· " + Model.PurchaseOrderNumber : "")</dd>
+                <dt class="col-sm-3">Criticality</dt><dd class="col-sm-3">@Model.Criticality</dd><dt class="col-sm-3">Condition</dt><dd class="col-sm-3">@Model.Condition</dd>
+                <dt class="col-sm-3">Warranty until</dt><dd class="col-sm-3">@(Model.WarrantyExpiry?.ToString("dd MMM yyyy") ?? "—")</dd><dt class="col-sm-3">Registered by</dt><dd class="col-sm-3">@Model.CreatedBy</dd>
+            </dl>
+            @if (Model.Description != null) { <p class="mt-2 mb-0 text-muted">@Model.Description</p> }
+        </div>
+        <div class="card p-3 mb-3"><h6>Work orders <span class="text-muted fw-normal">· lifetime maintenance cost @Ui.Money(maintCost)</span></h6>
+            <table class="table table-sm mb-0"><tbody>
+            @foreach (var w in Model.WorkOrders.OrderByDescending(w => w.RequestedOn).Take(10))
+            {
+                <tr><td><a asp-controller="Maintenance" asp-action="Details" asp-route-id="@w.Id">@w.Number</a></td><td>@w.Title</td><td>@Ui.Spaced(w.Type)</td><td><span class="badge text-bg-@Ui.Badge(w.Status)">@Ui.Spaced(w.Status)</span></td><td class="num">@Ui.Money(w.TotalCost)</td></tr>
+            }
+            @if (!Model.WorkOrders.Any()) { <tr><td class="text-muted">No work orders.</td></tr> }
+            </tbody></table>
+        </div>
+        <div class="card p-3 mb-3"><h6>Movement history</h6>
+            <table class="table table-sm mb-0"><tbody>
+            @foreach (var m in Model.Movements.OrderByDescending(m => m.MovedOn))
+            {
+                <tr><td class="text-nowrap">@m.MovedOn.ToString("dd MMM yyyy")</td><td>→ @m.ToPlant?.Code / @(m.ToLocation?.Name ?? "—")</td><td>@m.ToCostCenter?.Code</td><td>@m.Reason</td><td class="text-muted">@m.MovedBy</td></tr>
+            }
+            @if (!Model.Movements.Any()) { <tr><td class="text-muted">No transfers recorded.</td></tr> }
+            </tbody></table>
+        </div>
+        <div class="card p-3"><h6>Depreciation history</h6>
+            <table class="table table-sm mb-0"><thead><tr><th>Period</th><th class="num">Charge</th><th class="num">Accumulated</th><th class="num">Book value</th></tr></thead><tbody>
+            @foreach (var d in Model.DepreciationEntries.OrderByDescending(d => d.Year).ThenByDescending(d => d.Month))
+            {
+                <tr><td>@(new DateTime(d.Year, d.Month, 1).ToString("MMM yyyy"))</td><td class="num">@Ui.Money(d.Amount)</td><td class="num">@Ui.Money(d.AccumulatedAfter)</td><td class="num">@Ui.Money(d.BookValueAfter)</td></tr>
+            }
+            @if (!Model.DepreciationEntries.Any()) { <tr><td colspan="4" class="text-muted">No depreciation posted yet.</td></tr> }
+            </tbody></table>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-3 mb-3"><h6>Financials</h6>
+            <dl class="row mb-2">
+                <dt class="col-6">Acquired</dt><dd class="col-6 num">@Model.AcquisitionDate.ToString("dd MMM yyyy")</dd>
+                <dt class="col-6">Capitalised</dt><dd class="col-6 num">@(Model.CapitalizationDate?.ToString("dd MMM yyyy") ?? "—")</dd>
+                <dt class="col-6">Cost</dt><dd class="col-6 num">@Ui.Money(Model.AcquisitionCost)</dd>
+                <dt class="col-6">Salvage value</dt><dd class="col-6 num">@Ui.Money(Model.SalvageValue)</dd>
+                <dt class="col-6">Method</dt><dd class="col-6 num">@Ui.Spaced(Model.Method)</dd>
+                <dt class="col-6">Useful life</dt><dd class="col-6 num">@Model.UsefulLifeMonths months</dd>
+                <dt class="col-6">Accum. depreciation</dt><dd class="col-6 num">@Ui.Money(Model.AccumulatedDepreciation)</dd>
+                <dt class="col-6">Net book value</dt><dd class="col-6 num fw-bold">@Ui.Money(Model.BookValue)</dd>
+            </dl>
+            <div class="progress" style="height:6px"><div class="progress-bar" style="width:@(pct)%"></div></div><div class="small text-muted mt-1">@pct% depreciated</div>
+            <hr />
+            <div class="small text-muted">GL: @Model.Category?.AssetGlAccount?.Display<br />Accum: @Model.Category?.AccumDepGlAccount?.Display<br />Expense: @Model.Category?.DepExpenseGlAccount?.Display</div>
+            @if (Model.Status == AssetStatus.Disposed)
+            {
+                <hr /><div class="small"><b>Disposed</b> @Model.DisposalDate?.ToString("dd MMM yyyy") · proceeds @Ui.Money(Model.DisposalProceeds ?? 0)<br />@Model.DisposalReason</div>
+            }
+        </div>
+        <div class="card p-3"><h6>Audit trail</h6>
+            <ul class="timeline small">
+            @foreach (var e in Model.Events.OrderByDescending(e => e.At).Take(25))
+            {
+                <li><b>@e.EventType</b> <span class="text-muted">· @e.At.ToString("dd MMM yyyy HH:mm") · @e.PerformedBy</span><br />@e.Details</li>
+            }
+            </ul>
+        </div>
+    </div>
+</div>

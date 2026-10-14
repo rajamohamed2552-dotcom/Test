@@ -1,0 +1,13 @@
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.idea/
+*.user
+TestResults/
+# Machine-specific secrets: never commit
+appsettings.Local.json
+appsettings.*.local.json
+.env

@@ -1,0 +1,22 @@
+@model List<AssetEvent>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Activity trail";
+    int total = ViewBag.Total, page = ViewBag.Page;
+    var types = (List<string>)ViewBag.Types;
+    string? type = ViewBag.Type;
+    var pages = (int)Math.Ceiling(total / 50.0);
+}
+<form method="get" class="d-flex gap-2 mb-3" style="max-width:420px">
+    <select name="type" class="form-select"><option value="">All event types</option>@foreach (var t in types) { <option value="@t" selected="@(t == type)">@t</option> }</select>
+    <button class="btn btn-outline-primary">Filter</button>
+</form>
+<div class="card"><table class="table table-sm mb-0"><thead><tr><th>When</th><th>Asset</th><th>Event</th><th>Details</th><th>By</th></tr></thead><tbody>
+@foreach (var e in Model)
+{
+    <tr><td class="text-nowrap text-muted">@e.At.ToString("dd MMM yyyy HH:mm")</td><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@e.AssetId">@e.Asset?.AssetTag</a></td><td><span class="badge text-bg-light">@e.EventType</span></td><td>@e.Details</td><td class="text-muted">@e.PerformedBy</td></tr>
+}
+</tbody></table></div>
+<div class="d-flex justify-content-between align-items-center mt-3"><span class="text-muted">@total event(s)</span>
+@if (pages > 1) { <div><a class="btn btn-sm btn-outline-secondary @(page <= 1 ? "disabled" : "")" asp-action="Trail" asp-route-type="@type" asp-route-page="@(page - 1)">Prev</a> <span class="mx-2">@(page) / @(pages)</span> <a class="btn btn-sm btn-outline-secondary @(page >= pages ? "disabled" : "")" asp-action="Trail" asp-route-type="@type" asp-route-page="@(page + 1)">Next</a></div> }
+</div>

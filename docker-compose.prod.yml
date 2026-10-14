@@ -1,0 +1,49 @@
+# Full self-hosted stack, all open source: app + PostgreSQL + Caddy (automatic HTTPS).
+# Usage:  cp .env.example .env   (edit values)   then   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gkm_assets
+      POSTGRES_USER: gkm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gkm -d gkm_assets"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: Host=db;Port=5432;Database=gkm_assets;Username=gkm;Password=${DB_PASSWORD}
+      Seed__SampleData: ${SEED_SAMPLE_DATA:-false}
+      Seed__AdminEmail: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    volumes:
+      - appkeys:/keys
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  pgdata:
+  appkeys:
+  caddy_data:

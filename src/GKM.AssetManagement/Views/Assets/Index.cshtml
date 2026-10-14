@@ -1,0 +1,51 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Asset register";
+    var items = (List<Asset>)ViewBag.Items;
+    int total = ViewBag.Total, page = ViewBag.Page, size = ViewBag.PageSize;
+    var pages = (int)Math.Ceiling(total / (double)size);
+    var rv = new Dictionary<string, string?> { ["q"] = ViewBag.Q, ["status"] = ((AssetStatus?)ViewBag.Status)?.ToString(), ["plantId"] = ((int?)ViewBag.PlantId)?.ToString(), ["categoryId"] = ((int?)ViewBag.CategoryId)?.ToString() };
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <form method="get" class="row g-2 flex-grow-1 me-3">
+        <div class="col-md-3"><input name="q" value="@ViewBag.Q" class="form-control" placeholder="Search tag, name, serial…" /></div>
+        <div class="col-md-2"><select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AssetStatus>()"><option value="">All statuses</option></select></div>
+        <div class="col-md-2"><select name="plantId" class="form-select" asp-items="(SelectList)ViewBag.Plants"><option value="">All plants</option></select></div>
+        <div class="col-md-3"><select name="categoryId" class="form-select" asp-items="(SelectList)ViewBag.Categories"><option value="">All categories</option></select></div>
+        <div class="col-md-2"><button class="btn btn-outline-primary">Filter</button> <a asp-action="Index" class="btn btn-link">Reset</a></div>
+    </form>
+    <div class="text-nowrap">
+        <a asp-action="Export" asp-all-route-data="rv" class="btn btn-outline-secondary">Export CSV</a>
+        @if (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.AssetAccountant) || User.IsInRole(Roles.PlantManager))
+        {
+            <a asp-action="Create" class="btn btn-primary">+ Register asset</a>
+        }
+    </div>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Plant / location</th><th>Cost centre</th><th>Status</th><th class="num">Cost</th><th class="num">Book value</th></tr></thead>
+    <tbody>
+    @foreach (var a in items)
+    {
+        <tr>
+            <td><a asp-action="Details" asp-route-id="@a.Id">@a.AssetTag</a></td>
+            <td>@a.Name</td><td>@a.Category?.Name</td><td>@a.Plant?.Code / @(a.Location?.Name ?? "—")</td><td>@a.CostCenter?.Code</td>
+            <td><span class="badge text-bg-@Ui.Badge(a.Status)">@Ui.Spaced(a.Status)</span></td>
+            <td class="num">@Ui.Money0(a.AcquisitionCost)</td><td class="num">@Ui.Money0(a.BookValue)</td>
+        </tr>
+    }
+    @if (items.Count == 0) { <tr><td colspan="8" class="text-center text-muted py-4">No assets match the filter.</td></tr> }
+    </tbody>
+</table></div></div>
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <span class="text-muted">@total asset(s)</span>
+    @if (pages > 1)
+    {
+        <nav><ul class="pagination mb-0">
+            <li class="page-item @(page <= 1 ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-all-route-data="rv" asp-route-page="@(page - 1)">Prev</a></li>
+            <li class="page-item disabled"><span class="page-link">@(page) / @(pages)</span></li>
+            <li class="page-item @(page >= pages ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-all-route-data="rv" asp-route-page="@(page + 1)">Next</a></li>
+        </ul></nav>
+    }
+</div>

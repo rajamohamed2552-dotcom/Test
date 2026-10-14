@@ -1,0 +1,5 @@
+# {$DOMAIN} = your public hostname (e.g. assets.example.com): Caddy obtains a free Let's Encrypt certificate automatically.
+# With DOMAIN=localhost it serves a local self-signed certificate.
+{$DOMAIN} {
+	reverse_proxy app:8080
+}

@@ -1,0 +1,17 @@
+# Render Blueprint: New > Blueprint > pick this repo. Free web service; database is external (Neon, free).
+services:
+  - type: web
+    name: gkm-asset-management
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: Database__Provider
+        value: Postgres
+      - key: ConnectionStrings__Postgres
+        sync: false        # paste your Neon connection string in the Render dashboard
+      - key: Seed__DemoPassword
+        sync: false        # initial password for the built-in demo users
+      - key: Seed__SampleData
+        value: "true"

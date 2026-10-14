@@ -1,0 +1,16 @@
+@model List<MaintenancePlan>
+@{ ViewData["Title"] = "Preventive maintenance plans"; var canWork = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.PlantManager) || User.IsInRole(Roles.MaintenanceEngineer); }
+<div class="d-flex justify-content-between mb-3">
+    <a asp-action="Index" class="btn btn-link ps-0">← Work orders</a>
+    @if (canWork) { <a asp-action="CreatePlan" class="btn btn-primary">+ New plan</a> }
+</div>
+<div class="card"><table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Asset</th><th>Plan</th><th class="num">Every (days)</th><th>Last done</th><th>Next due</th><th class="num">Est. cost</th></tr></thead><tbody>
+    @foreach (var p in Model)
+    {
+        var overdue = p.NextDueDate < DateTime.Today;
+        <tr><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@p.AssetId">@p.Asset?.AssetTag</a> <span class="text-muted">@p.Asset?.Name</span></td><td>@p.Name</td><td class="num">@p.FrequencyDays</td>
+            <td>@(p.LastPerformedOn?.ToString("dd MMM yyyy") ?? "—")</td>
+            <td class="@(overdue ? "text-danger fw-semibold" : "")">@p.NextDueDate.ToString("dd MMM yyyy") @if (overdue) { <span class="badge text-bg-danger">overdue</span> }</td><td class="num">@Ui.Money0(p.EstimatedCost)</td></tr>
+    }
+    </tbody></table></div>

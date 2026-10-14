@@ -1,0 +1,49 @@
+@model DashboardViewModel
+@using System.Text.Json
+@{ ViewData["Title"] = "Dashboard"; }
+@functions {
+    string Labels(List<(string Label, decimal Value)> d) => JsonSerializer.Serialize(d.Select(x => x.Label));
+    string Values(List<(string Label, decimal Value)> d) => JsonSerializer.Serialize(d.Select(x => x.Value));
+}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3"><div class="card kpi p-3"><div class="label">Active assets</div><div class="value">@Model.TotalAssets.ToString("N0")</div><div class="small text-muted">@Model.UnderMaintenance under maintenance</div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi p-3"><div class="label">Gross cost</div><div class="value">@Ui.Money0(Model.GrossCost)</div><div class="small text-muted">Accum. dep. @Ui.Money0(Model.AccumulatedDepreciation)</div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi p-3"><div class="label">Net book value</div><div class="value">@Ui.Money0(Model.NetBookValue)</div><div class="small text-muted">@(Model.GrossCost == 0 ? 0 : Math.Round(Model.NetBookValue / Model.GrossCost * 100)) % of cost remaining</div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi p-3"><div class="label">Maintenance cost YTD</div><div class="value">@Ui.Money0(Model.MaintenanceCostYtd)</div><div class="small text-muted">completed work orders</div></div></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><a class="card p-3 text-decoration-none" asp-controller="Onboarding" asp-action="Index"><div class="kpi"><div class="label">Pending approvals</div><div class="value @(Model.PendingApprovals > 0 ? "text-warning" : "")">@Model.PendingApprovals</div></div></a></div>
+    <div class="col-md-4"><a class="card p-3 text-decoration-none" asp-controller="Maintenance" asp-action="Index"><div class="kpi"><div class="label">Open work orders</div><div class="value">@Model.OpenWorkOrders</div></div></a></div>
+    <div class="col-md-4"><a class="card p-3 text-decoration-none" asp-controller="Maintenance" asp-action="Plans"><div class="kpi"><div class="label">Overdue PM plans</div><div class="value @(Model.OverduePlans > 0 ? "text-danger" : "")">@Model.OverduePlans</div></div></a></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card p-3"><h6>Net book value by asset class</h6><div class="chart-box"><canvas id="nbv"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="card p-3"><h6>Depreciation posted (last 6 runs)</h6><div class="chart-box"><canvas id="dep"></canvas></div></div></div>
+    <div class="col-lg-4"><div class="card p-3"><h6>Active assets by plant</h6><div class="chart-box"><canvas id="plant"></canvas></div></div></div>
+    <div class="col-lg-4"><div class="card p-3"><h6>Assets by status</h6><div class="chart-box"><canvas id="status"></canvas></div></div></div>
+    <div class="col-lg-4"><div class="card p-3"><h6>Maintenance spend (6 months)</h6><div class="chart-box"><canvas id="maint"></canvas></div></div></div>
+</div>
+<div class="card p-3">
+    <h6>Recent activity</h6>
+    <table class="table table-sm mb-0"><tbody>
+    @foreach (var e in Model.RecentEvents)
+    {
+        <tr><td class="text-muted text-nowrap">@e.At.ToString("dd MMM HH:mm")</td><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@e.AssetId">@e.Asset?.AssetTag</a></td><td><span class="badge text-bg-light">@e.EventType</span></td><td>@e.Details</td></tr>
+    }
+    </tbody></table>
+</div>
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    const palette = ['#2563eb', '#0d9488', '#d97706', '#7c3aed', '#dc2626', '#64748b'];
+    const mk = (id, type, labels, data, opts = {}) => new Chart(document.getElementById(id), {
+        type, data: { labels, datasets: [{ data, backgroundColor: type === 'line' ? '#2563eb' : palette, borderColor: '#2563eb', borderWidth: type === 'line' ? 2 : 0 }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'right' } }, ...opts }
+    });
+    mk('nbv', 'bar', @Html.Raw(Labels(Model.NbvByClass)), @Html.Raw(Values(Model.NbvByClass)));
+    mk('dep', 'bar', @Html.Raw(Labels(Model.DepreciationByMonth)), @Html.Raw(Values(Model.DepreciationByMonth)));
+    mk('plant', 'doughnut', @Html.Raw(Labels(Model.CountByPlant)), @Html.Raw(Values(Model.CountByPlant)));
+    mk('status', 'doughnut', @Html.Raw(Labels(Model.CountByStatus)), @Html.Raw(Values(Model.CountByStatus)));
+    mk('maint', 'bar', @Html.Raw(Labels(Model.MaintenanceByMonth)), @Html.Raw(Values(Model.MaintenanceByMonth)));
+</script>
+}

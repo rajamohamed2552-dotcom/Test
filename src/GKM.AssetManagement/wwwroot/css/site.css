@@ -1,0 +1,25 @@
+:root { --gkm-navy: #12263f; --gkm-accent: #0d6efd; --surface: #f4f6f9; }
+body { background: var(--surface); font-size: .92rem; }
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { width: 236px; flex: 0 0 236px; background: var(--gkm-navy); padding: 1rem 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.sidebar .brand { display: block; color: #fff; font-weight: 600; padding: .25rem 1.1rem 1rem; text-decoration: none; }
+.brand-mark { background: var(--gkm-accent); border-radius: 4px; padding: 1px 6px; margin-right: 4px; }
+.nav-section { color: #7e92ad; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; padding: .9rem 1.1rem .3rem; }
+.sidebar .nav-link { color: #c9d5e6; padding: .4rem 1.1rem; border-left: 3px solid transparent; }
+.sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,.06); }
+.sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.1); border-left-color: var(--gkm-accent); }
+.main { flex: 1; min-width: 0; }
+.topbar { background: #fff; border-bottom: 1px solid #e2e6ec; padding: .6rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+.content { padding: 1.5rem; }
+.card { border: 1px solid #e2e6ec; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.kpi .label { color: #667085; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+.kpi .value { font-size: 1.5rem; font-weight: 600; }
+.table > :not(caption) > * > * { padding: .5rem .75rem; }
+.table thead th { color: #667085; font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--gkm-navy); }
+.login-card { width: 380px; }
+.timeline { list-style: none; padding-left: 0; margin: 0; }
+.timeline li { border-left: 2px solid #d0d5dd; padding: 0 0 .8rem 1rem; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--gkm-accent); }
+.chart-box { position: relative; height: 240px; }

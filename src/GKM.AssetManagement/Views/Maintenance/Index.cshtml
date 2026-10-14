@@ -1,0 +1,24 @@
+@model List<WorkOrder>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{ ViewData["Title"] = "Maintenance work orders"; var canWork = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.PlantManager) || User.IsInRole(Roles.MaintenanceEngineer); }
+<div class="d-flex justify-content-between mb-3">
+    <form method="get" class="d-flex gap-2"><select name="status" class="form-select" asp-items="Html.GetEnumSelectList<WorkOrderStatus>()"><option value="">All statuses</option></select><button class="btn btn-outline-primary">Filter</button></form>
+    <div class="d-flex gap-2">
+        <a asp-action="Plans" class="btn btn-outline-secondary">PM plans</a>
+        @if (canWork)
+        {
+            <form asp-action="GenerateDue" method="post"><button class="btn btn-outline-secondary">Generate due PM orders</button></form>
+            <a asp-action="Create" class="btn btn-primary">+ Work order</a>
+        }
+    </div>
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Number</th><th>Asset</th><th>Title</th><th>Type</th><th>Priority</th><th>Status</th><th>Scheduled</th><th class="num">Cost</th></tr></thead><tbody>
+    @foreach (var w in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@w.Id">@w.Number</a></td><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@w.AssetId">@w.Asset?.AssetTag</a></td><td>@w.Title</td><td>@w.Type</td>
+            <td><span class="badge text-bg-@Ui.Badge(w.Priority)">@w.Priority</span></td><td><span class="badge text-bg-@Ui.Badge(w.Status)">@Ui.Spaced(w.Status)</span></td>
+            <td>@w.ScheduledDate?.ToString("dd MMM yyyy")</td><td class="num">@(w.Status == WorkOrderStatus.Completed ? Ui.Money(w.TotalCost) : "—")</td></tr>
+    }
+    @if (Model.Count == 0) { <tr><td colspan="8" class="text-center text-muted py-4">No work orders.</td></tr> }
+    </tbody></table></div></div>

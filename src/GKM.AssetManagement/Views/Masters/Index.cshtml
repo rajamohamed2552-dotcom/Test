@@ -1,0 +1,54 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Master data";
+    var plants = (List<Plant>)ViewBag.Plants;
+    var locations = (List<Location>)ViewBag.Locations;
+    var ccs = (List<CostCenter>)ViewBag.CostCenters;
+    var gls = (List<GlAccount>)ViewBag.GlAccounts;
+    var plantItems = new SelectList(plants.Where(p => p.IsActive), "Id", "Name");
+}
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-cc">Cost centres (@ccs.Count)</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-gl">GL accounts (@gls.Count)</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pl">Plants (@plants.Count)</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-loc">Locations (@locations.Count)</button></li>
+</ul>
+<div class="tab-content">
+<div class="tab-pane fade show active" id="t-cc">
+    <form asp-action="AddCostCenter" method="post" class="row g-2 mb-3">
+        <div class="col-md-2"><input name="code" class="form-control" placeholder="Code" required /></div><div class="col-md-3"><input name="name" class="form-control" placeholder="Name" required /></div>
+        <div class="col-md-3"><select name="plantId" class="form-select" asp-items="plantItems"><option value="">Corporate (no plant)</option></select></div>
+        <div class="col-md-2"><input name="owner" class="form-control" placeholder="Owner" /></div><div class="col-md-2"><button class="btn btn-primary w-100">Add</button></div>
+    </form>
+    <div class="card"><table class="table mb-0"><thead><tr><th>Code</th><th>Name</th><th>Plant</th><th>Owner</th><th></th></tr></thead><tbody>
+    @foreach (var c in ccs) { <tr class="@(c.IsActive ? "" : "text-muted")"><td>@c.Code</td><td>@c.Name</td><td>@(c.Plant?.Code ?? "Corporate")</td><td>@c.Owner</td><td class="text-end"><form asp-action="Toggle" method="post"><input type="hidden" name="kind" value="costcenter" /><input type="hidden" name="id" value="@c.Id" /><button class="btn btn-sm btn-link">@(c.IsActive ? "Deactivate" : "Activate")</button></form></td></tr> }
+    </tbody></table></div>
+</div>
+<div class="tab-pane fade" id="t-gl">
+    <form asp-action="AddGlAccount" method="post" class="row g-2 mb-3">
+        <div class="col-md-2"><input name="code" class="form-control" placeholder="GL code" required /></div><div class="col-md-5"><input name="name" class="form-control" placeholder="Account name" required /></div>
+        <div class="col-md-3"><select name="type" class="form-select" asp-items="Html.GetEnumSelectList<GlAccountType>()"></select></div><div class="col-md-2"><button class="btn btn-primary w-100">Add</button></div>
+    </form>
+    <div class="card"><table class="table mb-0"><thead><tr><th>Code</th><th>Name</th><th>Type</th></tr></thead><tbody>
+    @foreach (var g in gls) { <tr><td>@g.Code</td><td>@g.Name</td><td>@Ui.Spaced(g.Type)</td></tr> }
+    </tbody></table></div>
+</div>
+<div class="tab-pane fade" id="t-pl">
+    <form asp-action="AddPlant" method="post" class="row g-2 mb-3">
+        <div class="col-md-2"><input name="code" class="form-control" placeholder="Code" maxlength="10" required /></div><div class="col-md-5"><input name="name" class="form-control" placeholder="Plant name" required /></div>
+        <div class="col-md-3"><input name="city" class="form-control" placeholder="City" /></div><div class="col-md-2"><button class="btn btn-primary w-100">Add</button></div>
+    </form>
+    <div class="card"><table class="table mb-0"><thead><tr><th>Code</th><th>Name</th><th>City</th><th></th></tr></thead><tbody>
+    @foreach (var p in plants) { <tr class="@(p.IsActive ? "" : "text-muted")"><td>@p.Code</td><td>@p.Name</td><td>@p.City</td><td class="text-end"><form asp-action="Toggle" method="post"><input type="hidden" name="kind" value="plant" /><input type="hidden" name="id" value="@p.Id" /><button class="btn btn-sm btn-link">@(p.IsActive ? "Deactivate" : "Activate")</button></form></td></tr> }
+    </tbody></table></div>
+</div>
+<div class="tab-pane fade" id="t-loc">
+    <form asp-action="AddLocation" method="post" class="row g-2 mb-3">
+        <div class="col-md-3"><select name="plantId" class="form-select" asp-items="plantItems"></select></div><div class="col-md-3"><input name="name" class="form-control" placeholder="Location name" required /></div>
+        <div class="col-md-4"><input name="description" class="form-control" placeholder="Description" /></div><div class="col-md-2"><button class="btn btn-primary w-100">Add</button></div>
+    </form>
+    <div class="card"><table class="table mb-0"><thead><tr><th>Plant</th><th>Location</th><th>Description</th><th></th></tr></thead><tbody>
+    @foreach (var l in locations) { <tr class="@(l.IsActive ? "" : "text-muted")"><td>@l.Plant?.Code</td><td>@l.Name</td><td>@l.Description</td><td class="text-end"><form asp-action="Toggle" method="post"><input type="hidden" name="kind" value="location" /><input type="hidden" name="id" value="@l.Id" /><button class="btn btn-sm btn-link">@(l.IsActive ? "Deactivate" : "Activate")</button></form></td></tr> }
+    </tbody></table></div>
+</div>
+</div>

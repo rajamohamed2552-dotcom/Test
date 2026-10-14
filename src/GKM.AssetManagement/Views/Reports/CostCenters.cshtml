@@ -1,0 +1,6 @@
+@model List<CostCenterSummaryRow>
+@{ ViewData["Title"] = "Cost-centre summary"; }
+<div class="d-flex justify-content-between mb-3"><a asp-action="Index" class="btn btn-link ps-0">← Reports</a><a asp-action="CostCenters" asp-route-csv="true" class="btn btn-outline-secondary">Export CSV</a></div>
+<div class="card"><table class="table table-hover mb-0"><thead><tr><th>Cost centre</th><th>Plant</th><th class="num">Assets</th><th class="num">Cost</th><th class="num">Accum. dep.</th><th class="num">Net book value</th><th class="num">Maintenance spend</th></tr></thead><tbody>
+@foreach (var r in Model) { <tr><td>@r.CostCenter</td><td>@r.Plant</td><td class="num">@r.AssetCount</td><td class="num">@Ui.Money(r.Cost)</td><td class="num">@Ui.Money(r.AccumulatedDepreciation)</td><td class="num">@Ui.Money(r.NetBookValue)</td><td class="num">@Ui.Money(r.MaintenanceCost)</td></tr> }
+</tbody><tfoot><tr class="fw-bold"><td colspan="2">Total</td><td class="num">@Model.Sum(r => r.AssetCount)</td><td class="num">@Ui.Money(Model.Sum(r => r.Cost))</td><td class="num">@Ui.Money(Model.Sum(r => r.AccumulatedDepreciation))</td><td class="num">@Ui.Money(Model.Sum(r => r.NetBookValue))</td><td class="num">@Ui.Money(Model.Sum(r => r.MaintenanceCost))</td></tr></tfoot></table></div>

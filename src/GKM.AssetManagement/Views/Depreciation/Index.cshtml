@@ -1,0 +1,28 @@
+@model List<DepreciationRun>
+@{
+    ViewData["Title"] = "Depreciation";
+    var next = (DateTime)ViewBag.Next;
+    bool already = ViewBag.AlreadyRun;
+    var canRun = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager);
+}
+@if (canRun)
+{
+    <div class="card p-3 mb-3">
+        <h6>Post monthly depreciation</h6>
+        <form asp-action="Run" method="post" class="row g-2 align-items-end">
+            <div class="col-auto"><label class="form-label">Month</label><input name="month" type="number" min="1" max="12" class="form-control" value="@next.Month" /></div>
+            <div class="col-auto"><label class="form-label">Year</label><input name="year" type="number" class="form-control" value="@next.Year" /></div>
+            <div class="col-auto"><button class="btn btn-primary" @(already ? "disabled" : "") onclick="return confirm('Post depreciation for this period? This updates every eligible asset and cannot be re-run.')">Run depreciation</button></div>
+            @if (already) { <div class="col-auto text-muted align-self-center">@next.ToString("MMM yyyy") already posted.</div> }
+        </form>
+        <div class="form-text mt-2">Each eligible asset is depreciated once per period (straight-line or double-declining), never below salvage value. Future periods are blocked.</div>
+    </div>
+}
+<div class="card"><table class="table table-hover mb-0"><thead><tr><th>Period</th><th class="num">Assets</th><th class="num">Total depreciation</th><th>Run by</th><th>Run on</th><th></th></tr></thead><tbody>
+@foreach (var r in Model)
+{
+    <tr><td><b>@r.Period</b></td><td class="num">@r.AssetsProcessed</td><td class="num">@Ui.Money(r.TotalDepreciation)</td><td>@r.RunBy</td><td>@r.RunOn.ToString("dd MMM yyyy HH:mm")</td>
+        <td class="text-end"><a asp-action="Details" asp-route-id="@r.Id">Details</a> · <a asp-controller="Reports" asp-action="Journal" asp-route-year="@r.Year" asp-route-month="@r.Month">GL journal</a></td></tr>
+}
+@if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">No depreciation runs yet.</td></tr> }
+</tbody></table></div>

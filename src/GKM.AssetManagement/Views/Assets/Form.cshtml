@@ -1,0 +1,55 @@
+@model AssetForm
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var asset = ViewBag.Asset as Asset;
+    var locked = ViewBag.FinancialsLocked == true;
+    var editing = Model.Id != 0;
+    ViewData["Title"] = editing ? $"Edit {asset?.AssetTag}" : "Register asset";
+    var locations = (List<Location>)ViewBag.Locations;
+}
+<form asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@(editing ? Model.Id : null)" method="post">
+    <div asp-validation-summary="All" class="alert alert-danger py-2"></div>
+    @if (locked)
+    {
+        <div class="alert alert-info py-2">This asset is <b>@Ui.Spaced(asset?.Status)</b>. Financial and ownership fields are locked; use a <a asp-controller="Movements" asp-action="Create" asp-route-assetId="@Model.Id">transfer</a> to change location or cost centre.</div>
+        <input type="hidden" asp-for="CategoryId" /><input type="hidden" asp-for="PlantId" /><input type="hidden" asp-for="LocationId" /><input type="hidden" asp-for="CostCenterId" />
+        <input type="hidden" asp-for="AcquisitionCost" /><input type="hidden" asp-for="AcquisitionDate" />
+    }
+    <div class="row g-3">
+        <div class="col-lg-8"><div class="card p-3"><h6>General</h6><div class="row g-3">
+            <div class="col-md-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Criticality" class="form-label"></label><select asp-for="Criticality" class="form-select" asp-items="Html.GetEnumSelectList<Criticality>()"></select></div>
+            <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2"></textarea></div>
+            @if (!locked)
+            {
+                <div class="col-md-4"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" class="form-select" asp-items="(SelectList)ViewBag.Categories"><option value="">Select…</option></select></div>
+                <div class="col-md-4"><label asp-for="PlantId" class="form-label"></label><select asp-for="PlantId" id="plant" class="form-select" asp-items="(SelectList)ViewBag.Plants"><option value="">Select…</option></select></div>
+                <div class="col-md-4"><label asp-for="LocationId" class="form-label"></label>
+                    <select asp-for="LocationId" class="form-select" data-plant-source="#plant"><option value="">—</option>
+                        @foreach (var l in locations) { <option value="@l.Id" data-plant="@l.PlantId" selected="@(Model.LocationId == l.Id)">@l.Name</option> }
+                    </select></div>
+                <div class="col-md-6"><label asp-for="CostCenterId" class="form-label"></label><select asp-for="CostCenterId" class="form-select" asp-items="(SelectList)ViewBag.CostCenters"><option value="">Select…</option></select></div>
+            }
+            <div class="col-md-3"><label asp-for="Custodian" class="form-label"></label><input asp-for="Custodian" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Condition" class="form-label"></label><select asp-for="Condition" class="form-select" asp-items="Html.GetEnumSelectList<AssetCondition>()"></select></div>
+            <div class="col-md-4"><label asp-for="Manufacturer" class="form-label"></label><input asp-for="Manufacturer" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="ModelNumber" class="form-label"></label><input asp-for="ModelNumber" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="SerialNumber" class="form-label"></label><input asp-for="SerialNumber" class="form-control" /></div>
+        </div></div></div>
+        <div class="col-lg-4"><div class="card p-3"><h6>Procurement &amp; depreciation</h6><div class="row g-3">
+            <div class="col-12"><label asp-for="Vendor" class="form-label"></label><input asp-for="Vendor" class="form-control" /></div>
+            <div class="col-12"><label asp-for="PurchaseOrderNumber" class="form-label"></label><input asp-for="PurchaseOrderNumber" class="form-control" /></div>
+            <div class="col-12"><label asp-for="WarrantyExpiry" class="form-label"></label><input asp-for="WarrantyExpiry" type="date" class="form-control" /></div>
+            @if (!locked)
+            {
+                <div class="col-md-6"><label asp-for="AcquisitionDate" class="form-label"></label><input asp-for="AcquisitionDate" type="date" class="form-control" /></div>
+                <div class="col-md-6"><label asp-for="AcquisitionCost" class="form-label"></label><input asp-for="AcquisitionCost" type="number" step="0.01" class="form-control" /></div>
+                <div class="col-12"><hr class="my-1" /><div class="form-text">Leave blank to use the category defaults.</div></div>
+                <div class="col-12"><label asp-for="Method" class="form-label"></label><select asp-for="Method" class="form-select" asp-items="Html.GetEnumSelectList<DepreciationMethod>()"><option value="">Category default</option></select></div>
+                <div class="col-md-6"><label asp-for="UsefulLifeMonths" class="form-label"></label><input asp-for="UsefulLifeMonths" class="form-control" /></div>
+                <div class="col-md-6"><label asp-for="SalvageValue" class="form-label"></label><input asp-for="SalvageValue" type="number" step="0.01" class="form-control" /></div>
+            }
+        </div></div></div>
+    </div>
+    <div class="mt-3"><button class="btn btn-primary">@(editing ? "Save changes" : "Create draft")</button> <a asp-action="@(editing ? "Details" : "Index")" asp-route-id="@(editing ? Model.Id : null)" class="btn btn-link">Cancel</a></div>
+</form>

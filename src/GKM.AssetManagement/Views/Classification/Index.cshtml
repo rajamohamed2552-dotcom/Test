@@ -1,0 +1,23 @@
+@model List<AssetCategory>
+@{
+    ViewData["Title"] = "Asset classification";
+    var counts = (Dictionary<int, int>)ViewBag.Counts;
+    var canEdit = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager);
+}
+<div class="d-flex justify-content-between mb-3">
+    <p class="text-muted mb-0">Categories define the default depreciation policy, capitalisation threshold and GL mapping applied to new assets.</p>
+    @if (canEdit) { <a asp-action="Create" class="btn btn-primary">+ New category</a> }
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Class</th><th>Code</th><th>Category</th><th>Method</th><th class="num">Life (mo)</th><th class="num">Salvage %</th><th class="num">Cap. threshold</th><th>Asset GL</th><th>Dep. expense GL</th><th class="num">Assets</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        <tr class="@(c.IsActive ? "" : "text-muted")">
+            <td>@c.AssetClass</td><td><b>@c.Code</b></td><td>@c.Name @if (!c.IsActive) { <span class="badge text-bg-secondary">inactive</span> }</td><td>@Ui.Spaced(c.DefaultMethod)</td>
+            <td class="num">@c.DefaultUsefulLifeMonths</td><td class="num">@c.DefaultSalvagePercent</td><td class="num">@Ui.Money0(c.CapitalizationThreshold)</td>
+            <td>@c.AssetGlAccount?.Code</td><td>@c.DepExpenseGlAccount?.Code</td><td class="num">@counts.GetValueOrDefault(c.Id)</td>
+            <td>@if (canEdit) { <a asp-action="Edit" asp-route-id="@c.Id">Edit</a> }</td>
+        </tr>
+    }
+    </tbody></table></div></div>

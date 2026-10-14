@@ -1,0 +1,25 @@
+@model MoveForm
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Transfer asset";
+    var assets = (List<Asset>)ViewBag.AssetList;
+    var locations = (List<Location>)ViewBag.Locations;
+}
+<form asp-action="Create" method="post" class="card p-3" style="max-width:760px">
+    <div asp-validation-summary="All" class="alert alert-danger py-2"></div>
+    <div class="row g-3">
+        <div class="col-12"><label asp-for="AssetId" class="form-label">Asset</label>
+            <select asp-for="AssetId" class="form-select"><option value="">Select…</option>
+            @foreach (var a in assets) { <option value="@a.Id" selected="@(Model.AssetId == a.Id)">@a.AssetTag · @a.Name</option> }
+            </select></div>
+        <div class="col-md-6"><label asp-for="ToPlantId" class="form-label"></label><select asp-for="ToPlantId" id="plant" class="form-select" asp-items="(SelectList)ViewBag.Plants"><option value="">Select…</option></select></div>
+        <div class="col-md-6"><label asp-for="ToLocationId" class="form-label"></label>
+            <select asp-for="ToLocationId" class="form-select" data-plant-source="#plant"><option value="">—</option>
+            @foreach (var l in locations) { <option value="@l.Id" data-plant="@l.PlantId" selected="@(Model.ToLocationId == l.Id)">@l.Name</option> }
+            </select></div>
+        <div class="col-md-6"><label asp-for="ToCostCenterId" class="form-label"></label><select asp-for="ToCostCenterId" class="form-select" asp-items="(SelectList)ViewBag.CostCenters"><option value="">Select…</option></select><div class="form-text">Future depreciation is charged to the new cost centre.</div></div>
+        <div class="col-md-6"><label asp-for="ToCustodian" class="form-label"></label><input asp-for="ToCustodian" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Reason" class="form-label"></label><input asp-for="Reason" class="form-control" /></div>
+    </div>
+    <div class="mt-3"><button class="btn btn-primary">Record transfer</button> <a asp-action="Index" class="btn btn-link">Cancel</a></div>
+</form>

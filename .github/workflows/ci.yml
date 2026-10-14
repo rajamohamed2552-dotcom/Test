@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release
+  docker:
+    # Proves the container image builds on every push; deployment itself is done by the hosting platform.
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t gkm-assets:ci .

@@ -1,0 +1,26 @@
+@model List<Asset>
+@{ ViewData["Title"] = "Onboarding approvals"; }
+<p class="text-muted">Newly registered assets await Finance approval before they are capitalised and start depreciating. The requester cannot approve their own submission.</p>
+@foreach (var a in Model)
+{
+    <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between">
+            <div>
+                <h6 class="mb-1"><a asp-controller="Assets" asp-action="Details" asp-route-id="@a.Id">@a.AssetTag</a> · @a.Name</h6>
+                <div class="text-muted small">@a.Category?.Name · @a.Plant?.Code · @a.CostCenter?.Code · registered by @a.CreatedBy on @a.SubmittedAt?.ToString("dd MMM yyyy")</div>
+                <div class="mt-2">Cost <b>@Ui.Money(a.AcquisitionCost)</b> · @Ui.Spaced(a.Method) over @a.UsefulLifeMonths months · salvage @Ui.Money(a.SalvageValue) · PO @(a.PurchaseOrderNumber ?? "—") · acquired @a.AcquisitionDate.ToString("dd MMM yyyy")</div>
+            </div>
+            <div class="d-flex flex-column gap-2" style="min-width:300px">
+                <form asp-action="Approve" asp-route-id="@a.Id" method="post" class="input-group">
+                    <input type="date" name="capitalizationDate" class="form-control" value="@a.AcquisitionDate.ToString("yyyy-MM-dd")" title="Capitalisation date" />
+                    <button class="btn btn-success">Approve &amp; capitalise</button>
+                </form>
+                <form asp-action="Reject" asp-route-id="@a.Id" method="post" class="input-group">
+                    <input name="reason" class="form-control" placeholder="Rejection reason" required />
+                    <button class="btn btn-outline-danger">Reject</button>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+@if (Model.Count == 0) { <div class="card p-4 text-center text-muted">Nothing awaiting approval.</div> }

@@ -1,0 +1,67 @@
+@model AuditCampaign
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = Model.Name;
+    var all = (List<AuditItem>)ViewBag.All;
+    var items = (List<AuditItem>)ViewBag.Items;
+    var locations = (List<Location>)ViewBag.Locations;
+    AuditResult? filter = ViewBag.Filter;
+    var canAudit = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.Auditor);
+    var closed = Model.Status == AuditCampaignStatus.Closed;
+    var pending = all.Count(i => i.Result == AuditResult.Pending);
+    var bookAtRisk = all.Where(i => i.Result == AuditResult.Missing).Sum(i => i.Asset!.BookValue);
+}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">In scope</div><div class="value">@all.Count</div></div></div>
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">Pending</div><div class="value">@pending</div></div></div>
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">Verified</div><div class="value text-success">@all.Count(i => i.Result == AuditResult.Verified)</div></div></div>
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">Missing</div><div class="value text-danger">@all.Count(i => i.Result == AuditResult.Missing)</div></div></div>
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">Other findings</div><div class="value text-warning">@all.Count(i => i.Result is AuditResult.LocationMismatch or AuditResult.ConditionIssue)</div></div></div>
+    <div class="col-6 col-lg-2"><div class="card kpi p-3"><div class="label">Book value missing</div><div class="value">@Ui.Money0(bookAtRisk)</div></div></div>
+</div>
+<div class="d-flex justify-content-between mb-3">
+    <div class="btn-group">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary @(filter == null ? "active" : "")">All</a>
+        @foreach (var r in new[] { AuditResult.Pending, AuditResult.Verified, AuditResult.Missing, AuditResult.LocationMismatch, AuditResult.ConditionIssue })
+        {
+            <a asp-action="Details" asp-route-id="@Model.Id" asp-route-result="@r" class="btn btn-outline-secondary @(filter == r ? "active" : "")">@Ui.Spaced(r)</a>
+        }
+    </div>
+    <div class="d-flex gap-2"><a asp-action="Export" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Export CSV</a><a asp-action="Index" class="btn btn-link">← Campaigns</a></div>
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Asset</th><th>Expected location</th><th>Result</th><th>Found / notes</th>@if (canAudit && !closed) { <th style="min-width:520px">Record outcome</th> }</tr></thead><tbody>
+    @foreach (var i in items)
+    {
+        <tr>
+            <td><a asp-controller="Assets" asp-action="Details" asp-route-id="@i.AssetId">@i.Asset?.AssetTag</a><div class="small text-muted">@i.Asset?.Name</div></td>
+            <td>@(i.ExpectedLocation?.Name ?? "—")</td>
+            <td><span class="badge text-bg-@Ui.Badge(i.Result)">@Ui.Spaced(i.Result)</span></td>
+            <td class="small">@if (i.Result == AuditResult.LocationMismatch) { <span>Found at <b>@i.FoundLocation?.Name</b>. </span> }@i.Notes<div class="text-muted">@i.VerifiedBy @i.VerifiedOn?.ToString("dd MMM")</div></td>
+            @if (canAudit && !closed)
+            {
+                <td>
+                    <form asp-action="Verify" method="post" class="d-flex gap-1">
+                        <input type="hidden" name="itemId" value="@i.Id" />
+                        <select name="result" class="form-select form-select-sm" style="width:140px">
+                            <option value="Verified">Verified</option><option value="Missing">Missing</option><option value="LocationMismatch">Wrong location</option><option value="ConditionIssue">Condition issue</option>
+                        </select>
+                        <select name="foundLocationId" class="form-select form-select-sm" style="width:130px"><option value="">Found at…</option>@foreach (var l in locations) { <option value="@l.Id">@l.Name</option> }</select>
+                        <select name="condition" class="form-select form-select-sm" style="width:110px"><option value="">Condition</option>@foreach (var c in Enum.GetValues<AssetCondition>()) { <option value="@c">@c</option> }</select>
+                        <input name="notes" class="form-control form-control-sm" placeholder="Notes" />
+                        <button class="btn btn-sm btn-primary">Save</button>
+                    </form>
+                </td>
+            }
+        </tr>
+    }
+    </tbody></table></div></div>
+@if (canAudit && !closed)
+{
+    <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="card p-3 mt-3">
+        <h6>Close campaign</h6>
+        <textarea name="summary" class="form-control mb-2" rows="2" placeholder="Audit summary and conclusions"></textarea>
+        <div><button class="btn btn-dark" onclick="return confirm('Closing locks all results. Continue?')" disabled="@(pending > 0)">Close campaign</button> @if (pending > 0) { <span class="text-muted ms-2">@pending asset(s) still pending.</span> }</div>
+    </form>
+}
+@if (closed) { <div class="alert alert-secondary mt-3">Closed @Model.ClosedOn?.ToString("dd MMM yyyy"). @Model.Summary</div> }

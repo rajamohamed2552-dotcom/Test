@@ -1,0 +1,11 @@
+@model List<(Asset Asset, decimal Maintenance, int Orders, decimal Ratio)>
+@{ ViewData["Title"] = "Total cost of ownership"; }
+<div class="d-flex justify-content-between mb-3"><a asp-action="Index" class="btn btn-link ps-0">← Reports</a><a asp-action="Tco" asp-route-csv="true" class="btn btn-outline-secondary">Export CSV (all assets)</a></div>
+<p class="text-muted">Top 100 assets by lifetime maintenance spend as a percentage of acquisition cost.</p>
+<div class="card"><table class="table table-hover mb-0"><thead><tr><th>Asset</th><th>Category</th><th>Plant</th><th class="num">Acquisition cost</th><th class="num">Book value</th><th class="num">Maintenance</th><th class="num">Orders</th><th class="num">Maint. % of cost</th></tr></thead><tbody>
+@foreach (var r in Model)
+{
+    <tr><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@r.Asset.Id">@r.Asset.AssetTag</a> <span class="text-muted">@r.Asset.Name</span></td><td>@r.Asset.Category?.Name</td><td>@r.Asset.Plant?.Code</td>
+        <td class="num">@Ui.Money0(r.Asset.AcquisitionCost)</td><td class="num">@Ui.Money0(r.Asset.BookValue)</td><td class="num">@Ui.Money0(r.Maintenance)</td><td class="num">@r.Orders</td><td class="num">@r.Ratio.ToString("N2")%</td></tr>
+}
+</tbody></table></div>

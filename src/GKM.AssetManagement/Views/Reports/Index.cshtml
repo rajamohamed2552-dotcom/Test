@@ -1,0 +1,7 @@
+@{ ViewData["Title"] = "Reports"; }
+<div class="row g-3">
+    <div class="col-md-6 col-xl-3"><a class="card p-3 h-100 text-decoration-none" asp-controller="Assets" asp-action="Export"><h6>Fixed asset register</h6><span class="text-muted small">Full register with cost, accumulated depreciation and book value (CSV).</span></a></div>
+    <div class="col-md-6 col-xl-3"><a class="card p-3 h-100 text-decoration-none" asp-action="CostCenters"><h6>Cost-centre summary</h6><span class="text-muted small">Asset base, book value and maintenance spend per cost centre.</span></a></div>
+    <div class="col-md-6 col-xl-3"><a class="card p-3 h-100 text-decoration-none" asp-action="Tco"><h6>Total cost of ownership</h6><span class="text-muted small">Acquisition plus lifetime maintenance per asset; find money pits for replace-vs-repair.</span></a></div>
+    <div class="col-md-6 col-xl-3"><a class="card p-3 h-100 text-decoration-none" asp-action="Journal"><h6>Depreciation GL journal</h6><span class="text-muted small">Dr expense / Cr accumulated depreciation per period and cost centre.</span></a></div>
+</div>

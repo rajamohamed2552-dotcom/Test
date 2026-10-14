@@ -1,0 +1,30 @@
+@model WorkOrder
+@{
+    ViewData["Title"] = Model.Number;
+    var canWork = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.FinanceManager) || User.IsInRole(Roles.PlantManager) || User.IsInRole(Roles.MaintenanceEngineer);
+    var open = Model.Status is WorkOrderStatus.Open or WorkOrderStatus.InProgress;
+}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h4 class="mb-1">@Model.Title</h4><span class="badge text-bg-@Ui.Badge(Model.Status)">@Ui.Spaced(Model.Status)</span> <span class="badge text-bg-@Ui.Badge(Model.Priority)">@Model.Priority</span> <span class="text-muted ms-2">@Model.Type</span></div>
+    @if (canWork && open)
+    {
+        <div class="d-flex gap-2">
+            @if (Model.Status == WorkOrderStatus.Open) { <form asp-action="Start" asp-route-id="@Model.Id" method="post"><button class="btn btn-info">Start work</button></form> }
+            <a asp-action="Complete" asp-route-id="@Model.Id" class="btn btn-success">Complete</a>
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post"><button class="btn btn-outline-danger" onclick="return confirm('Cancel this work order?')">Cancel</button></form>
+        </div>
+    }
+</div>
+<div class="row g-3"><div class="col-lg-8"><div class="card p-3">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Asset</dt><dd class="col-sm-9"><a asp-controller="Assets" asp-action="Details" asp-route-id="@Model.AssetId">@Model.Asset?.AssetTag</a> · @Model.Asset?.Name (@Model.Asset?.Plant?.Code)</dd>
+        <dt class="col-sm-3">Description</dt><dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+        <dt class="col-sm-3">Requested</dt><dd class="col-sm-9">@Model.RequestedOn.ToString("dd MMM yyyy") by @Model.RequestedBy</dd>
+        <dt class="col-sm-3">Assigned to</dt><dd class="col-sm-9">@(Model.AssignedTo ?? "—")</dd>
+        <dt class="col-sm-3">Scheduled</dt><dd class="col-sm-9">@(Model.ScheduledDate?.ToString("dd MMM yyyy") ?? "—")</dd>
+        <dt class="col-sm-3">Started / completed</dt><dd class="col-sm-9">@(Model.StartedOn?.ToString("dd MMM yyyy") ?? "—") / @(Model.CompletedOn?.ToString("dd MMM yyyy") ?? "—")</dd>
+        <dt class="col-sm-3">Resolution</dt><dd class="col-sm-9">@(Model.ResolutionNotes ?? "—")</dd>
+    </dl></div></div>
+    <div class="col-lg-4"><div class="card p-3"><h6>Cost</h6>
+        <dl class="row mb-0"><dt class="col-7">Labour</dt><dd class="col-5 num">@Ui.Money(Model.LaborCost)</dd><dt class="col-7">Parts</dt><dd class="col-5 num">@Ui.Money(Model.PartsCost)</dd><dt class="col-7">External</dt><dd class="col-5 num">@Ui.Money(Model.ExternalCost)</dd><dt class="col-7">Total</dt><dd class="col-5 num fw-bold">@Ui.Money(Model.TotalCost)</dd></dl>
+    </div></div></div>

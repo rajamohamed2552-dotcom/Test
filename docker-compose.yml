@@ -1,0 +1,14 @@
+# Local PostgreSQL for development. Matches the default connection string in appsettings.json.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gkm_assets
+      POSTGRES_USER: gkm
+      POSTGRES_PASSWORD: gkm_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - gkm_pgdata:/var/lib/postgresql/data
+volumes:
+  gkm_pgdata:

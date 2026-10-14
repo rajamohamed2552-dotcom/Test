@@ -1,0 +1,15 @@
+@model DepreciationRun
+@{
+    ViewData["Title"] = $"Depreciation {Model.Period}";
+    var entries = (List<DepreciationEntry>)ViewBag.Entries;
+    var ccs = (Dictionary<int, CostCenter>)ViewBag.CostCenters;
+}
+<p class="text-muted">@Model.AssetsProcessed assets · total <b>@Ui.Money(Model.TotalDepreciation)</b> · posted by @Model.RunBy on @Model.RunOn.ToString("dd MMM yyyy HH:mm")</p>
+<div class="card"><div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th>Asset</th><th>Category</th><th>Cost centre</th><th class="num">Charge</th><th class="num">Accumulated</th><th class="num">Book value</th></tr></thead><tbody>
+@foreach (var e in entries)
+{
+    <tr><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@e.AssetId">@e.Asset?.AssetTag</a> <span class="text-muted">@e.Asset?.Name</span></td><td>@e.Asset?.Category?.Name</td><td>@ccs[e.CostCenterId].Code</td>
+        <td class="num">@Ui.Money(e.Amount)</td><td class="num">@Ui.Money(e.AccumulatedAfter)</td><td class="num">@Ui.Money(e.BookValueAfter)</td></tr>
+}
+</tbody></table></div></div>
+<a asp-action="Index" class="btn btn-link mt-2">← All runs</a>
